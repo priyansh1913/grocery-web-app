@@ -16,17 +16,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
             .authorizeRequests()
-                .antMatchers("/register", "/login", "/css/**", "/js/**").permitAll()
+                .antMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                .antMatchers("/products").permitAll()
                 .anyRequest().authenticated()
                 .and()
             .formLogin()
                 .loginPage("/login")
-                .defaultSuccessUrl("/dashboard")
+                .defaultSuccessUrl("/products")
                 .permitAll()
                 .and()
             .logout()
-                .logoutSuccessUrl("/login?logout")
-                .permitAll();
+                .logoutSuccessUrl("/?logout")
+                .permitAll()
+                .and()
+            .csrf()
+                .disable();
     }
 
     @Bean
