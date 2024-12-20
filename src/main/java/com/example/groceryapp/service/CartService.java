@@ -5,11 +5,10 @@ import com.example.groceryapp.model.CartItem;
 import com.example.groceryapp.model.Product;
 import com.example.groceryapp.model.User;
 import com.example.groceryapp.repository.CartRepository;
+import com.example.groceryapp.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 public class CartService {
@@ -18,57 +17,40 @@ public class CartService {
     private CartRepository cartRepository;
 
     @Autowired
-    private ProductService productService;
+    private ProductRepository productRepository;
 
     @Transactional
     public Cart getOrCreateCart(User user) {
         return cartRepository.findByUser(user)
                 .orElseGet(() -> {
-                    Cart newCart = new Cart();
-                    newCart.setUser(user);
-                    return cartRepository.save(newCart);
+                    Cart cart = new Cart();
+                    cart.setUser(user);
+                    return cartRepository.save(cart);
                 });
     }
 
     @Transactional
-    public Cart addToCart(User user, Long productId, Integer quantity) {
+    public void addToCart(User user, Long productId, int quantity) {
         Cart cart = getOrCreateCart(user);
-        Product product = productService.getProductById(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
-                .findFirst();
-
-        if (existingItem.isPresent()) {
-            CartItem item = existingItem.get();
-            item.setQuantity(item.getQuantity() + quantity);
-        } else {
-            CartItem newItem = new CartItem();
-            newItem.setCart(cart);
-            newItem.setProduct(product);
-            newItem.setQuantity(quantity);
-            newItem.setPrice(product.getPrice());
-            cart.getItems().add(newItem);
-        }
-
-        return cartRepository.save(cart);
-    }
-
-    @Transactional
-    public Cart updateCartItem(User user, Long productId, Integer quantity) {
-        Cart cart = getOrCreateCart(user);
-        cart.getItems().stream()
+        CartItem existingItem = cart.getItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
                 .findFirst()
-                .ifPresent(item -> {
-                    if (quantity <= 0) {
-                        cart.getItems().remove(item);
-                    } else {
-                        item.setQuantity(quantity);
-                    }
-                });
-        return cartRepository.save(cart);
+                .orElse(null);
+
+        if (existingItem != null) {
+            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+        } else {
+            CartItem cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setProduct(product);
+            cartItem.setQuantity(quantity);
+            cart.getItems().add(cartItem);
+        }
+
+        cartRepository.save(cart);
     }
 
     @Transactional
@@ -79,9 +61,24 @@ public class CartService {
     }
 
     @Transactional
+    public void updateCartItemQuantity(User user, Long productId, int quantity) {
+        Cart cart = getOrCreateCart(user);
+        cart.getItems().stream()
+                .filter(item -> item.getProduct().getId().equals(productId))
+                .findFirst()
+                .ifPresent(item -> item.setQuantity(quantity));
+        cartRepository.save(cart);
+    }
+
+    @Transactional
     public void clearCart(User user) {
         Cart cart = getOrCreateCart(user);
         cart.getItems().clear();
         cartRepository.save(cart);
+    }
+
+    public Cart getCart(User user) {
+        return cartRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
     }
 }

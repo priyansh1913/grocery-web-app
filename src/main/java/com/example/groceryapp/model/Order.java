@@ -19,21 +19,21 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> items = new ArrayList<>();
+    @Column(name = "total_amount", nullable = false)
+    private BigDecimal totalAmount;
 
-    @Column(nullable = false)
-    private BigDecimal total;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private OrderStatus status;
-
     @Column(nullable = false)
+    private OrderStatus status = OrderStatus.PENDING;
+
+    @Column(name = "shipping_address", nullable = false)
     private String shippingAddress;
 
-    @Column(nullable = false)
+    @Column(name = "phone_number")
     private String phoneNumber;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -45,9 +45,6 @@ public class Order {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (status == null) {
-            status = OrderStatus.PENDING;
-        }
     }
 
     @PreUpdate

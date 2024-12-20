@@ -1,4 +1,4 @@
-HELP.md
+mysql -u root -p236790 grocery_db -e "SELECT id, username, email, first_name, last_name, created_at FROM users;"HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
